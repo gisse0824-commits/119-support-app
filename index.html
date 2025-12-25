@@ -17,34 +17,49 @@
             touch-action: manipulation;
         }
         .header-badge {
-            margin-top: 40px; background-color: rgba(255, 77, 77, 0.1);
+            margin-top: 50px; background-color: rgba(255, 77, 77, 0.1);
             border: 1px solid rgba(255, 77, 77, 0.3); color: #ff6b6b;
             padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold;
         }
-        .main-title { font-size: 36px; font-weight: 800; margin: 20px 0 30px 0; text-align: center; line-height: 1.2; }
+        .main-title { font-size: 32px; font-weight: 800; margin: 15px 0 25px 0; text-align: center; line-height: 1.2; }
         .highlight-red { color: #ff4d4d; }
 
         .search-container { position: relative; width: 90%; max-width: 500px; margin-bottom: 15px; }
         .search-input {
-            width: 100%; padding: 16px 20px; padding-right: 80px;
+            width: 100%; padding: 16px 110px 16px 20px;
             background-color: #24283b; border: 2px solid #414868; border-radius: 50px;
             color: #fff; font-size: 16px; outline: none; box-sizing: border-box;
         }
-        .search-btn {
+        .search-input:focus { border-color: #ff4d4d; }
+        
+        .btn-group-search {
             position: absolute; right: 6px; top: 6px; bottom: 6px;
-            background-color: #007bff; color: white; border: none; border-radius: 40px;
-            padding: 0 18px; cursor: pointer; font-weight: bold;
+            display: flex; gap: 4px;
         }
+        
+        .icon-btn {
+            background-color: #414868; color: white; border: none; border-radius: 40px;
+            padding: 0 14px; cursor: pointer; font-size: 18px; display: flex; align-items: center;
+        }
+        /* [수정] 마이크 버튼 배경색을 파란색(#007bff)으로 변경 */
+        .voice-btn { background-color: #007bff; }
+        .voice-btn.recording { background-color: #ff4d4d; animation: pulse 1.5s infinite; }
+        .search-btn { background-color: #007bff; font-weight: bold; font-size: 14px; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         .example-area {
-            width: 90%; max-width: 500px; 
-            display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-            margin-bottom: 30px;
+            width: 90%; max-width: 500px; display: flex; 
+            justify-content: flex-start; gap: 8px; flex-wrap: nowrap;
+            margin-bottom: 30px; overflow-x: auto; padding: 5px 0 15px 0;
+            -webkit-overflow-scrolling: touch;
         }
+        .example-area::-webkit-scrollbar { display: none; }
+
         .tag-btn {
-            background-color: #24283b; color: #a9b1d6; 
-            border: 1px solid #414868; border-radius: 20px;
-            padding: 8px 12px; font-size: 13px; cursor: pointer;
+            background-color: #24283b; color: #a9b1d6; border: 1px solid #414868; 
+            border-radius: 20px; padding: 8px 16px; font-size: 13px; cursor: pointer;
+            white-space: nowrap; flex-shrink: 0;
         }
 
         #result-area { width: 92%; max-width: 500px; padding-bottom: 50px; }
@@ -53,11 +68,11 @@
             margin-bottom: 15px; border: 1px solid #414868; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
             animation: fadeIn 0.3s ease-in-out;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         .building-name { font-size: 20px; font-weight: bold; color: #7aa2f7; margin-bottom: 5px; }
         .addr-box { font-size: 13px; color: #a9b1d6; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #414868; }
-        .data-row { margin-bottom: 15px; position: relative; }
+        .data-row { margin-bottom: 15px; }
         .data-label { display: inline-block; color: #ff9e64; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
         
         .data-content {
@@ -97,66 +112,68 @@
 
     <div class="search-container">
         <input type="text" id="searchInput" class="search-input" placeholder="건물명 또는 주소 입력" onkeyup="if(window.event.keyCode==13){searchBuilding()}">
-        <button class="search-btn" onclick="searchBuilding()">검색</button>
+        <div class="btn-group-search">
+            <button id="voiceBtn" class="icon-btn voice-btn" onclick="startVoiceRecognition()">🎙️</button>
+            <button class="icon-btn search-btn" onclick="searchBuilding()">검색</button>
+        </div>
     </div>
 
-    <div class="example-area">
-        <button class="tag-btn" onclick="setSearch('미추홀 아파트')">#미추홀아파트</button>
-        <button class="tag-btn" onclick="setSearch('인천타워 상가')">#인천타워</button>
-        <button class="tag-btn" onclick="setSearch('남동구청')">#남동구청</button>
-        <button class="tag-btn" onclick="setSearch('길병원')">#길병원</button>
-    </div>
+    <div id="historyArea" class="example-area"></div>
 
     <div id="result-area"></div>
 
     <script>
         const buildingData = [
-            {
-                name: "미추홀 아파트 101동",
-                newAddr: "인천 미추홀구 소방로 123",
-                oldAddr: "관교동 11-1",
-                panelLoc: "1층 경비실 내부 우측 벽면 (P형)",
-                manager: "박관리 010-1234-5678",
-                note: "지하주차장 습기로 인한 잦은 오작동 발생함.",
-                history: ["24.11.20 - 지하1층 습기 오작동", "24.08.15 - 세대 내 음식물 연기"]
-            },
-            {
-                name: "인천타워 상가",
-                newAddr: "인천 미추홀구 인하로 55",
-                oldAddr: "용현동 22-5",
-                panelLoc: "지하 2층 방재실 (R형 수신기)",
-                manager: "김소장 010-9876-5432",
-                note: "야간 정문 잠김. 건물 뒤편 보안실 호출 필수.",
-                history: ["24.10.05 - 공사현장 분진", "24.02.11 - 1층 식당 감지기 오작동"]
-            },
-            {
-                name: "남동구청",
-                newAddr: "인천 남동구 소래로 633",
-                oldAddr: "만수동 908-4",
-                panelLoc: "1층 중앙 현관 경비실 (P형 수신기)",
-                manager: "시설팀 032-466-3811",
-                note: "야간 시 후문 폐쇄, 정문으로만 진입 가능.",
-                history: ["25.10.12 - 3층 민원실 오작동", "25.04.05 - 지하 주차장 습기"]
-            },
-            {
-                name: "가천대 길병원 (응급센터)",
-                newAddr: "인천 남동구 남동대로 774번길 21",
-                oldAddr: "구월동 1198",
-                panelLoc: "지하 1층 방재센터 (R형 수신기)",
-                manager: "보안팀 032-460-3333",
-                note: "중환자 다수 구역. 사이렌 최소화 및 조용한 진입 권장.",
-                history: ["25.12.01 - 응급실 베드 인근 오작동", "25.07.22 - 조리실 연기 오인"]
-            }
+            { name: "미추홀 아파트 101동", newAddr: "인천 미추홀구 소방로 123", oldAddr: "관교동 11-1", panelLoc: "1층 경비실 내부 우측 벽면 (P형)", manager: "박관리 010-1234-5678", note: "지하주차장 습기로 인한 잦은 오작동 발생함.", history: ["24.11.20 - 지하1층 습기 오작동", "24.08.15 - 세대 내 음식물 연기"] },
+            { name: "인천타워 상가", newAddr: "인천 미추홀구 인하로 55", oldAddr: "용현동 22-5", panelLoc: "지하 2층 방재실 (R형 수신기)", manager: "김소장 010-9876-5432", note: "야간 정문 잠김. 건물 뒤편 보안실 호출 필수.", history: ["24.10.05 - 공사현장 분진", "24.02.11 - 1층 식당 감지기 오작동"] },
+            { name: "인천 중앙시장 (A동)", newAddr: "인천 미추홀구 시장길 12", oldAddr: "숭의동 200-1", panelLoc: "A동 입구 보안요원 대기실 내부 (P형)", manager: "시장조합 032-123-4567", note: "새벽 시간대 반찬가게 요리 연기로 인한 오인 신고 잦음.", history: ["25.12.10 - 1층 생선가게 스팀기 오작동", "25.09.01 - 시장 내 분진 작업"] },
+            { name: "행복 요양병원", newAddr: "인천 미추홀구 주안로 99", oldAddr: "주안동 77-7", panelLoc: "본관 1층 안내데스크 뒤쪽 (R형)", manager: "행복병원 032-999-8888", note: "환자 거동 불편으로 피난 보조 인력 다수 필요. 야간 근무자 3명.", history: ["25.12.20 - 3층 병실 가습기 오작동", "25.06.10 - 주방 조리 연기 오인"] }
         ];
+
+        let searchHistory = JSON.parse(localStorage.getItem('fire_search_history')) || ["미추홀 아파트", "인천 중앙시장", "인천타워", "행복 요양병원"];
+
+        function renderHistory() {
+            const area = document.getElementById('historyArea');
+            area.innerHTML = searchHistory.map(keyword => 
+                `<button class="tag-btn" onclick="setSearch('${keyword}')">#${keyword}</button>`
+            ).join('');
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => { document.getElementById('voiceBtn').classList.add('recording'); };
+            recognition.onend = () => { document.getElementById('voiceBtn').classList.remove('recording'); };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('searchInput').value = transcript;
+                searchBuilding();
+            };
+        }
+
+        function startVoiceRecognition() {
+            if (!recognition) { alert("이 브라우저는 음성 인식을 지원하지 않습니다. 크롬 앱을 사용해 주세요."); return; }
+            recognition.start();
+        }
 
         function setSearch(keyword) {
             document.getElementById('searchInput').value = keyword;
             searchBuilding();
         }
 
+        function updateHistory(keyword) {
+            searchHistory = [keyword, ...searchHistory.filter(item => item !== keyword)];
+            searchHistory = searchHistory.slice(0, 4);
+            localStorage.setItem('fire_search_history', JSON.stringify(searchHistory));
+            renderHistory();
+        }
+
         function requestFieldEdit(buildingName, fieldLabel, currentValue) {
             const newValue = prompt(`[${buildingName}] ${fieldLabel} 정보 수정\n\n현재 내용: ${currentValue}\n수정할 내용을 입력하세요:`);
-            
             if (newValue && newValue !== currentValue) {
                 alert(`'${fieldLabel}' 수정 요청이 전송되었습니다.\n검토 후 업데이트됩니다.`);
             }
@@ -165,21 +182,22 @@
         function searchBuilding() {
             const input = document.getElementById('searchInput').value.trim();
             const resultArea = document.getElementById('result-area');
-            
-            if(input === "") { alert("주소를 입력해주세요."); return; }
+            if(input === "") { alert("검색어를 입력해주세요."); return; }
 
             resultArea.innerHTML = "";
             const normalizedInput = input.replace(/\s+/g, ""); 
             
             const results = buildingData.filter(item => {
-                const normalizedName = item.name.replace(/\s+/g, "");
-                const normalizedNewAddr = item.newAddr.replace(/\s+/g, "");
-                const normalizedOldAddr = item.oldAddr.replace(/\s+/g, "");
-
-                return normalizedName.includes(normalizedInput) || 
-                       normalizedNewAddr.includes(normalizedInput) ||
-                       normalizedOldAddr.includes(normalizedInput);
+                const nName = item.name.replace(/\s+/g, "");
+                const nNew = item.newAddr.replace(/\s+/g, "");
+                const nOld = item.oldAddr.replace(/\s+/g, "");
+                return nName.includes(normalizedInput) || nNew.includes(normalizedInput) || nOld.includes(normalizedInput);
             });
+
+            if(results.length > 0) {
+                const displayName = results[0].name.split(' ')[0] + " " + (results[0].name.split(' ')[1] || "");
+                updateHistory(displayName);
+            }
 
             if(results.length === 0) {
                 resultArea.innerHTML = "<div style='text-align:center; color:#565f89; margin-top:20px;'>검색 결과가 없습니다.</div>";
@@ -189,20 +207,17 @@
             results.forEach(item => {
                 const phoneNum = item.manager.replace(/[^0-9]/g, '');
                 const historyList = item.history.map(log => `<li>${log}</li>`).join('');
-
-                const html = `
+                resultArea.innerHTML += `
                     <div class="info-card">
                         <div class="building-name">${item.name}</div>
                         <div class="addr-box">${item.newAddr}</div>
-                        
                         <div class="data-row">
                             <span class="data-label">🚨 수신반(수신기) 위치</span>
-                            <div class="data-content" style="font-weight:bold; color:#fff;">
+                            <div class="data-content" style="font-weight:bold;">
                                 <span>${item.panelLoc}</span>
                                 <button class="action-btn edit-btn" onclick="requestFieldEdit('${item.name}', '수신기 위치', '${item.panelLoc}')">수정</button>
                             </div>
                         </div>
-
                         <div class="data-row">
                             <span class="data-label">📞 관계인 연락처</span>
                             <div class="data-content">
@@ -213,22 +228,19 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="data-row">
                             <span class="data-label">📝 주요 특이사항</span>
-                            <div class="data-content" style="border-left-color:#7aa2f7;">
-                                <span style="color:#c0caf5;">${item.note}</span>
+                            <div class="data-content" style="border-left-color:#7aa2f7; color:#c0caf5;">
+                                <span>${item.note}</span>
                                 <button class="action-btn edit-btn" onclick="requestFieldEdit('${item.name}', '특이사항', '${item.note}')">수정</button>
                             </div>
                         </div>
-
                         <div class="data-row">
                             <span class="data-label">🕒 과거 출동 이력</span>
                             <div class="data-content" style="border-left-color:#bb9af7;">
                                 <ul class="history-list">${historyList}</ul>
                             </div>
                         </div>
-
                         <div class="data-row" style="margin-top:25px; padding-top:15px; border-top:1px dashed #414868;">
                             <span class="data-label">🗺️ 길안내 (내비게이션)</span>
                             <div class="map-btn-group">
@@ -237,11 +249,11 @@
                                 <a href="nmap://search?query=${item.newAddr}" class="map-btn naver">네이버</a>
                             </div>
                         </div>
-                    </div>
-                `;
-                resultArea.innerHTML += html;
+                    </div>`;
             });
         }
+
+        renderHistory();
     </script>
 </body>
 </html>
