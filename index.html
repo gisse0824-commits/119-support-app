@@ -88,7 +88,7 @@
 </head>
 <body>
 
-    <div class="header-badge">인천소방본부 </div>
+    <div class="header-badge">인천소방본부</div>
     
     <div class="main-title">
         비화재보(오인)<br>
@@ -103,6 +103,8 @@
     <div class="example-area">
         <button class="tag-btn" onclick="setSearch('미추홀 아파트')">#미추홀아파트</button>
         <button class="tag-btn" onclick="setSearch('인천타워 상가')">#인천타워</button>
+        <button class="tag-btn" onclick="setSearch('남동구청')">#남동구청</button>
+        <button class="tag-btn" onclick="setSearch('길병원')">#길병원</button>
     </div>
 
     <div id="result-area"></div>
@@ -126,6 +128,24 @@
                 manager: "김소장 010-9876-5432",
                 note: "야간 정문 잠김. 건물 뒤편 보안실 호출 필수.",
                 history: ["24.10.05 - 공사현장 분진", "24.02.11 - 1층 식당 감지기 오작동"]
+            },
+            {
+                name: "남동구청",
+                newAddr: "인천 남동구 소래로 633",
+                oldAddr: "만수동 908-4",
+                panelLoc: "1층 중앙 현관 경비실 (P형 수신기)",
+                manager: "시설팀 032-466-3811",
+                note: "야간 시 후문 폐쇄, 정문으로만 진입 가능.",
+                history: ["25.10.12 - 3층 민원실 오작동", "25.04.05 - 지하 주차장 습기"]
+            },
+            {
+                name: "가천대 길병원 (응급센터)",
+                newAddr: "인천 남동구 남동대로 774번길 21",
+                oldAddr: "구월동 1198",
+                panelLoc: "지하 1층 방재센터 (R형 수신기)",
+                manager: "보안팀 032-460-3333",
+                note: "중환자 다수 구역. 사이렌 최소화 및 조용한 진입 권장.",
+                history: ["25.12.01 - 응급실 베드 인근 오작동", "25.07.22 - 조리실 연기 오인"]
             }
         ];
 
@@ -139,7 +159,6 @@
             
             if (newValue && newValue !== currentValue) {
                 alert(`'${fieldLabel}' 수정 요청이 전송되었습니다.\n검토 후 업데이트됩니다.`);
-                console.log(`[수정요청] 대상:${buildingName}, 항목:${fieldLabel}, 내용:${newValue}`);
             }
         }
 
@@ -150,8 +169,6 @@
             if(input === "") { alert("주소를 입력해주세요."); return; }
 
             resultArea.innerHTML = "";
-
-            // 공백을 제거한 입력값
             const normalizedInput = input.replace(/\s+/g, ""); 
             
             const results = buildingData.filter(item => {
@@ -159,7 +176,6 @@
                 const normalizedNewAddr = item.newAddr.replace(/\s+/g, "");
                 const normalizedOldAddr = item.oldAddr.replace(/\s+/g, "");
 
-                // 건물명, 도로명주소, 지번주소 중 하나라도 포함되면 결과에 추가
                 return normalizedName.includes(normalizedInput) || 
                        normalizedNewAddr.includes(normalizedInput) ||
                        normalizedOldAddr.includes(normalizedInput);
@@ -229,4 +245,3 @@
     </script>
 </body>
 </html>
-
