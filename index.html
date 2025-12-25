@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1a1b26">
+    
+    <title>비화재보 출동 지원 시스템</title>
+
+    <style>
+        body {
+            margin: 0; padding: 0; background-color: #1a1b26;
+            font-family: 'Pretendard', 'Malgun Gothic', sans-serif; color: white;
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+            touch-action: manipulation;
+        }
+        .header-badge {
+            margin-top: 40px; background-color: rgba(255, 77, 77, 0.1);
+            border: 1px solid rgba(255, 77, 77, 0.3); color: #ff6b6b;
+            padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold;
+        }
+        .main-title { font-size: 36px; font-weight: 800; margin: 20px 0 30px 0; text-align: center; line-height: 1.2; }
+        .highlight-red { color: #ff4d4d; }
+
+        .search-container { position: relative; width: 90%; max-width: 500px; margin-bottom: 15px; }
+        .search-input {
+            width: 100%; padding: 16px 20px; padding-right: 80px;
+            background-color: #24283b; border: 2px solid #414868; border-radius: 50px;
+            color: #fff; font-size: 16px; outline: none; box-sizing: border-box;
+        }
+        .search-btn {
+            position: absolute; right: 6px; top: 6px; bottom: 6px;
+            background-color: #007bff; color: white; border: none; border-radius: 40px;
+            padding: 0 18px; cursor: pointer; font-weight: bold;
+        }
+
+        .example-area {
+            width: 90%; max-width: 500px; 
+            display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+        .tag-btn {
+            background-color: #24283b; color: #a9b1d6; 
+            border: 1px solid #414868; border-radius: 20px;
+            padding: 8px 12px; font-size: 13px; cursor: pointer;
+        }
+
+        #result-area { width: 92%; max-width: 500px; padding-bottom: 50px; }
+        .info-card {
+            background-color: #24283b; border-radius: 16px; padding: 20px;
+            margin-bottom: 15px; border: 1px solid #414868; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .building-name { font-size: 20px; font-weight: bold; color: #7aa2f7; margin-bottom: 5px; }
+        .addr-box { font-size: 13px; color: #a9b1d6; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #414868; }
+        .data-row { margin-bottom: 15px; position: relative; }
+        .data-label { display: inline-block; color: #ff9e64; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+        
+        /* 데이터 박스 구성 */
+        .data-content {
+            background-color: #16161e; padding: 12px; border-radius: 8px;
+            font-size: 15px; line-height: 1.5; border-left: 4px solid #ff4d4d;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        
+        /* 버튼 공통 스타일 */
+        .btn-group { display: flex; gap: 5px; }
+        .action-btn {
+            padding: 6px 10px; border-radius: 6px; font-size: 13px; font-weight: bold; 
+            text-decoration: none; border: none; cursor: pointer;
+        }
+        .call-btn { background-color: #4caf50; color: white; }
+        .edit-btn { background-color: #414868; color: #bb9af7; border: 1px solid #bb9af7; }
+
+        .history-list { margin: 0; padding-left: 20px; color: #a9b1d6; font-size: 13px; }
+
+        .map-btn-group { display: flex; gap: 8px; margin-top: 5px; }
+        .map-btn {
+            flex: 1; text-align: center; padding: 10px 0; border-radius: 8px;
+            text-decoration: none; font-size: 13px; font-weight: bold; color: white;
+        }
+        .tmap { background-color: #E6002D; } 
+        .kakao { background-color: #FEE500; color: #191919; } 
+        .naver { background-color: #03C75A; } 
+
+    </style>
+</head>
+<body>
+
+    <div class="header-badge">인천소방본부 현장대응팀</div>
+    
+    <div class="main-title">
+        비화재보(오인)<br>
+        <span class="highlight-red">출동 지원 시스템</span>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="건물명 또는 주소 입력" onkeyup="if(window.event.keyCode==13){searchBuilding()}">
+        <button class="search-btn" onclick="searchBuilding()">검색</button>
+    </div>
+
+    <div class="example-area">
+        <button class="tag-btn" onclick="setSearch('미추홀 아파트')">#미추홀아파트</button>
+        <button class="tag-btn" onclick="setSearch('인천타워 상가')">#인천타워</button>
+    </div>
+
+    <div id="result-area"></div>
+
+    <script>
+        const buildingData = [
+            {
+                name: "미추홀 아파트 101동",
+                newAddr: "인천 미추홀구 소방로 123",
+                oldAddr: "관교동 11-1",
+                panelLoc: "1층 경비실 내부 우측 벽면 (P형)",
+                manager: "박관리 010-1234-5678",
+                note: "지하주차장 습기로 인한 잦은 오작동 발생함.",
+                history: ["24.11.20 - 지하1층 습기 오작동", "24.08.15 - 세대 내 음식물 연기"]
+            },
+            {
+                name: "인천타워 상가",
+                newAddr: "인천 미추홀구 인하로 55",
+                oldAddr: "용현동 22-5",
+                panelLoc: "지하 2층 방재실 (R형 수신기)",
+                manager: "김소장 010-9876-5432",
+                note: "야간 정문 잠김. 건물 뒤편 보안실 호출 필수.",
+                history: ["24.10.05 - 공사현장 분진", "24.02.11 - 1층 식당 감지기 오작동"]
+            }
+        ];
+
+        function setSearch(keyword) {
+            document.getElementById('searchInput').value = keyword;
+            searchBuilding();
+        }
+
+        // 개별 항목 수정을 요청하는 함수
+        function requestFieldEdit(buildingName, fieldLabel, currentValue) {
+            const newValue = prompt(`[${buildingName}] ${fieldLabel} 정보 수정\n\n현재 내용: ${currentValue}\n수정할 내용을 입력하세요:`);
+            
+            if (newValue && newValue !== currentValue) {
+                alert(`'${fieldLabel}' 수정 요청이 전송되었습니다.\n검토 후 업데이트됩니다.`);
+                console.log(`[수정요청] 대상:${buildingName}, 항목:${fieldLabel}, 내용:${newValue}`);
+            }
+        }
+
+        function searchBuilding() {
+            const input = document.getElementById('searchInput').value.trim();
+            const resultArea = document.getElementById('result-area');
+            
+            if(input === "") { alert("주소를 입력해주세요."); return; }
+
+            resultArea.innerHTML = "";
+            const results = buildingData.filter(data => data.newAddr.includes(input) || data.name.includes(input));
+
+            if(results.length === 0) {
+                resultArea.innerHTML = "<div style='text-align:center; color:#565f89; margin-top:20px;'>검색 결과가 없습니다.</div>";
+                return;
+            }
+
+            results.forEach(item => {
+                const phoneNum = item.manager.replace(/[^0-9]/g, '');
+                const historyList = item.history.map(log => `<li>${log}</li>`).join('');
+
+                const html = `
+                    <div class="info-card">
+                        <div class="building-name">${item.name}</div>
+                        <div class="addr-box">${item.newAddr}</div>
+                        
+                        <div class="data-row">
+                            <span class="data-label">🚨 수신반(수신기) 위치</span>
+                            <div class="data-content" style="font-weight:bold; color:#fff;">
+                                <span>${item.panelLoc}</span>
+                                <button class="action-btn edit-btn" onclick="requestFieldEdit('${item.name}', '수신기 위치', '${item.panelLoc}')">수정</button>
+                            </div>
+                        </div>
+
+                        <div class="data-row">
+                            <span class="data-label">📞 관계인 연락처</span>
+                            <div class="data-content">
+                                <span>${item.manager}</span>
+                                <div class="btn-group">
+                                    <a href="tel:${phoneNum}" class="action-btn call-btn">통화</a>
+                                    <button class="action-btn edit-btn" onclick="requestFieldEdit('${item.name}', '연락처', '${item.manager}')">수정</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="data-row">
+                            <span class="data-label">📝 주요 특이사항</span>
+                            <div class="data-content" style="border-left-color:#7aa2f7;">
+                                <span style="color:#c0caf5;">${item.note}</span>
+                                <button class="action-btn edit-btn" onclick="requestFieldEdit('${item.name}', '특이사항', '${item.note}')">수정</button>
+                            </div>
+                        </div>
+
+                        <div class="data-row">
+                            <span class="data-label">🕒 과거 출동 이력</span>
+                            <div class="data-content" style="border-left-color:#bb9af7;">
+                                <ul class="history-list">${historyList}</ul>
+                            </div>
+                        </div>
+
+                        <div class="data-row" style="margin-top:25px; padding-top:15px; border-top:1px dashed #414868;">
+                            <span class="data-label">🗺️ 길안내 (내비게이션)</span>
+                            <div class="map-btn-group">
+                                <a href="tmap://search?name=${item.newAddr}" class="map-btn tmap">T map</a>
+                                <a href="kakaomap://search?q=${item.newAddr}" class="map-btn kakao">카카오맵</a>
+                                <a href="nmap://search?query=${item.newAddr}" class="map-btn naver">네이버</a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultArea.innerHTML += html;
+            });
+        }
+    </script>
+</body>
+</html>
